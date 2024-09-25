@@ -1,5 +1,6 @@
 package br.com.alura.screenmatch.principal;
 
+import br.com.alura.screenmatch.excecao.ErroDeConversaoDeAnoException;
 import br.com.alura.screenmatch.modelos.Titulo;
 import br.com.alura.screenmatch.modelos.TituloOmdb;
 import com.google.gson.FieldNamingPolicy;
@@ -19,22 +20,33 @@ public class PrincipalComBusca {
         System.out.println("Digite um filme para busca: ");
         var busca = leitura.nextLine();
 
-        String endereco = "https://www.omdbapi.com/?t=" + busca + "&apikey=a5cbe6fb";
+        String endereco = "https://www.omdbapi.com/?t=" + busca.replaceAll(" ", "+") + "&apikey=a5cbe6fb";
+        try{
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(endereco))
+                    .build();
+            HttpResponse<String> response = client
+                    .send(request, HttpResponse.BodyHandlers.ofString());
+            String json = response.body();
+            System.out.println(json);
 
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(endereco))
-                .build();
-        HttpResponse<String> response = client
-                .send(request, HttpResponse.BodyHandlers.ofString());
-        String json = response.body();
-        System.out.println(json);
+            Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE).create();
+            TituloOmdb meuTituloOmdb = gson.fromJson(json, TituloOmdb.class);
+            System.out.println(meuTituloOmdb);
 
-        Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE).create();
-        TituloOmdb meuTituloOmdb = gson.fromJson(json, TituloOmdb.class);
-        System.out.println(meuTituloOmdb);
-        Titulo meuTitulo = new Titulo(meuTituloOmdb);
-        System.out.println("Título já convertido ");
-        System.out.println(meuTitulo);
+            Titulo meuTitulo = new Titulo(meuTituloOmdb);
+            System.out.println("Título já convertido ");
+            System.out.println(meuTitulo);
+        } catch (NumberFormatException e){
+            System.out.println("Aconteceu um erro");
+            System.out.println(e.getMessage());
+        } catch (IllegalArgumentException e){
+            System.out.println("Algum erro de argumento na busca, verifique o endereço.");
+        } catch (ErroDeConversaoDeAnoException e){
+            System.out.println(e.getMessage());
+        }
+
+        System.out.println("Programa finalizou corretamente!");
     }
 }
